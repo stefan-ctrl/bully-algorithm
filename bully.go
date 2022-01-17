@@ -185,7 +185,6 @@ func (b *Bully) Send(to, addr string, what int) error {
 
 // SetCoordinator sets `ID` as the new `b.coordinator` if `ID` is greater than
 // `b.coordinator` or equal to `b.ID`.
-//
 // NOTE: This function is thread-safe.
 func (b *Bully) SetCoordinator(ID string) {
 	b.mu.Lock()
@@ -195,6 +194,9 @@ func (b *Bully) SetCoordinator(ID string) {
 		b.NewLeader = true
 		b.IsLeader = false
 	} else {
+		if !b.IsLeader {
+			b.NewLeader = true
+		}
 		b.IsLeader = true
 	}
 	if ID > b.coordinator || ID == b.ID {
