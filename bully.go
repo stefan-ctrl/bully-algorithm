@@ -190,15 +190,16 @@ func (b *Bully) SetCoordinator(ID string) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	if ID > b.coordinator {
+	if b.coordinator != ID {
 		b.NewLeader = true
-		b.IsLeader = false
-	} else {
-		if !b.IsLeader {
-			b.NewLeader = true
-		}
-		b.IsLeader = true
 	}
+
+	if ID == b.ID {
+		b.IsLeader = true
+	} else {
+		b.IsLeader = false
+	}
+
 	if ID > b.coordinator || ID == b.ID {
 		PrintTiming(LEADER_ELECTED)
 		b.coordinator = ID
