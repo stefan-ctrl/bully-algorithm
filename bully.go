@@ -220,7 +220,7 @@ func (b *Bully) Coordinator() string {
 
 // Elect handles the leader election mechanism of the `Bully algorithm`.
 func (b *Bully) Elect() {
-	go PrintTiming(ELECTION_START)
+	PrintTiming(ELECTION_START)
 	for _, rBully := range b.peers.PeerData() {
 		if rBully.ID > b.ID {
 			_ = b.Send(rBully.ID, rBully.Addr, ELECTION)
