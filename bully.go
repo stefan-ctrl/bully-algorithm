@@ -197,13 +197,15 @@ func (b *Bully) SetCoordinator(ID string) {
 	} else {
 		b.IsLeader = true
 	}
-
 	if ID > b.coordinator || ID == b.ID {
 		PrintTiming(LEADER_ELECTED)
 		b.coordinator = ID
 		b.HasLeader = true
 	}
 
+	if !b.FirstElection {
+		b.Unstable <- struct{}{}
+	}
 }
 
 // Coordinator returns `b.coordinator`.
