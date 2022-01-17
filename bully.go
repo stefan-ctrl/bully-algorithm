@@ -17,13 +17,19 @@ import (
 type Bully struct {
 	*net.TCPListener
 
-	ID           string
-	addr         string
-	coordinator  string
-	peers        Peers
-	mu           *sync.RWMutex
-	receiveChan  chan Message
-	electionChan chan Message
+	ID            string
+	addr          string
+	coordinator   string
+	peers         Peers
+	mu            *sync.RWMutex
+	receiveChan   chan Message
+	electionChan  chan Message
+	Unstable      chan struct{}
+	FirstElection bool
+	HasLeader     bool
+	NewLeader     bool
+	IsLeader      bool
+	T2Started     bool
 }
 
 // NewBully returns a new `Bully` or an `error`.
@@ -33,13 +39,19 @@ type Bully struct {
 // NOTE: The `proto` value can be one of this list: `tcp`, `tcp4`, `tcp6`.
 func NewBully(ID, addr, proto string, peers map[string]string) (*Bully, error) {
 	b := &Bully{
-		ID:           ID,
-		addr:         addr,
-		coordinator:  ID,
-		peers:        NewPeerMap(),
-		mu:           &sync.RWMutex{},
-		electionChan: make(chan Message, 1),
-		receiveChan:  make(chan Message),
+		ID:            ID,
+		addr:          addr,
+		coordinator:   ID,
+		peers:         NewPeerMap(),
+		mu:            &sync.RWMutex{},
+		electionChan:  make(chan Message, 1),
+		receiveChan:   make(chan Message),
+		Unstable:      make(chan struct{}),
+		FirstElection: true,
+		HasLeader:     false,
+		NewLeader:     false,
+		IsLeader:      false,
+		T2Started:     false,
 	}
 
 	if err := b.Listen(proto, addr); err != nil {
@@ -179,9 +191,19 @@ func (b *Bully) SetCoordinator(ID string) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	if ID > b.coordinator || ID == b.ID {
-		b.coordinator = ID
+	if ID > b.coordinator {
+		b.NewLeader = true
+		b.IsLeader = false
+	} else {
+		b.IsLeader = true
 	}
+
+	if ID > b.coordinator || ID == b.ID {
+		PrintTiming(LEADER_ELECTED)
+		b.coordinator = ID
+		b.HasLeader = true
+	}
+
 }
 
 // Coordinator returns `b.coordinator`.
@@ -196,6 +218,7 @@ func (b *Bully) Coordinator() string {
 
 // Elect handles the leader election mechanism of the `Bully algorithm`.
 func (b *Bully) Elect() {
+	go PrintTiming(ELECTION_START)
 	for _, rBully := range b.peers.PeerData() {
 		if rBully.ID > b.ID {
 			_ = b.Send(rBully.ID, rBully.Addr, ELECTION)
@@ -210,6 +233,7 @@ func (b *Bully) Elect() {
 		for _, rBully := range b.peers.PeerData() {
 			_ = b.Send(rBully.ID, rBully.Addr, COORDINATOR)
 		}
+		b.FirstElection = false
 		return
 	}
 }
