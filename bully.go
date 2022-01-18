@@ -203,10 +203,8 @@ func (b *Bully) SetCoordinator(ID string) {
 	}
 
 	if ID > b.coordinator || ID == b.ID {
-		PrintTiming(LEADER_ELECTED)
 		b.coordinator = ID
 		b.HasLeader = true
-		b.ElectionFinished = true
 	}
 
 	if !b.FirstElection {
@@ -236,6 +234,9 @@ func (b *Bully) Elect() {
 
 	select {
 	case <-b.electionChan:
+		PrintTiming(LEADER_ELECTED)
+		b.FirstElection = false //got msg from other instance so should end it
+		b.ElectionFinished = true
 		return
 	case <-time.After(time.Second):
 		b.SetCoordinator(b.ID)
@@ -243,6 +244,8 @@ func (b *Bully) Elect() {
 			_ = b.Send(rBully.ID, rBully.Addr, COORDINATOR)
 		}
 		b.FirstElection = false
+		PrintTiming(LEADER_ELECTED)
+		b.ElectionFinished = true
 		return
 	}
 }
