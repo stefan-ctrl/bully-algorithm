@@ -192,7 +192,7 @@ func (b *Bully) SetCoordinator(ID string) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	if b.coordinator != ID {
+	if b.coordinator != ID || b.FirstElection {
 		b.NewLeader = true
 	}
 
