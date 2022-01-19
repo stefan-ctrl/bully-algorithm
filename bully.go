@@ -194,6 +194,7 @@ func (b *Bully) SetCoordinator(ID string) {
 
 	if b.coordinator != ID || b.FirstElection {
 		b.NewLeader = true
+		Debug(fmt.Sprintf("NEW_LEADER=b.coordinator != ID:%s:%s||b.FirstElection:%v", b.coordinator, ID, b.FirstElection))
 	}
 
 	if ID == b.ID {
@@ -235,7 +236,7 @@ func (b *Bully) Elect() {
 	select {
 	case <-b.electionChan:
 		PrintTiming(LEADER_ELECTED)
-		b.FirstElection = false //got msg from other instance so should end it
+		b.FirstElection = false //high ID started election, so I end my.
 		b.ElectionFinished = true
 		return
 	case <-time.After(time.Second):
